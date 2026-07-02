@@ -14,7 +14,7 @@ class Memory{
 
         void storeWord(uint32_t address, uint32_t value);
 
-        uint32_t loadByte(uint32_t address) const;
+        uint8_t loadByte(uint32_t address) const;
 
         void storeByte(uint32_t address, uint8_t value);
 
