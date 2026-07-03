@@ -1,4 +1,12 @@
 #include "../include/CPU.h"
+#include "../include/Opcodes.h"
+
+#include <stdexcept>
+#include <iostream>
+#include <iomanip>
+#include <cstdint>
+#include <string>
+
 
 #include <iostream>
 
@@ -32,7 +40,7 @@ void CPU::run() {
             case InstrType::I:
                 aluop = MapToALU(id_decoded.funct3, id_decoded.funct7, id_decoded.opcode);
                 alu_result = alu.execute(aluop, regFile.read(id_decoded.rs1), id_decoded.imm);
-                if (id_decoded.opcode == 0x03){
+                if (id_decoded.opcode == Opcodes::LOAD){
                     if (id_decoded.funct3 == 0x0) { // LB
                         regFile.write(id_decoded.rd, static_cast<int32_t>(static_cast<int8_t>(memory.loadByte(alu_result.value))));
                     } else if (id_decoded.funct3 == 0x2) { // LW
@@ -40,9 +48,9 @@ void CPU::run() {
                     } else {
                         throw std::runtime_error("Unsupported load instruction");
                     }
-                } if(id_decoded.opcode == 0x13){
+                } if(id_decoded.opcode == Opcodes::OP_IMM) {
                     regFile.write(id_decoded.rd, alu_result.value);
-                } if (id_decoded.opcode == 0x67) {
+                } if (id_decoded.opcode == Opcodes::JALR) {
                     regFile.write(id_decoded.rd, pc + 4);
                     pc = alu_result.value;
                     continue;
@@ -110,9 +118,9 @@ void CPU::run() {
                 aluop = MapToALU(id_decoded.funct3, id_decoded.funct7, id_decoded.opcode);
                 alu_result = alu.execute(aluop, id_decoded.imm, 12);
                 
-                if (id_decoded.opcode == 0x37) { // LUI
+                if (id_decoded.opcode == Opcodes::LUI) { // LUI
                     regFile.write(id_decoded.rd, id_decoded.imm);
-                } else if (id_decoded.opcode == 0x17) { // AUIPC
+                } else if (id_decoded.opcode == Opcodes::AUIPC) { // AUIPC
                     regFile.write(id_decoded.rd, pc + id_decoded.imm);
                 } else {
                     throw std::runtime_error("Unsupported U-type instruction");
@@ -153,7 +161,7 @@ void CPU::printStats() {
 }
 
 ALUOp CPU::MapToALU(uint32_t funct3, uint32_t funct7, uint32_t opcode) {
-    if (opcode == 0x33){ // R-type
+    if (opcode == Opcodes::OP){ // R-type
         switch (funct3){
             case 0x0:
                 return (funct7 == 0x00) ? ALUOp::ADD : ALUOp::SUB;
@@ -176,7 +184,7 @@ ALUOp CPU::MapToALU(uint32_t funct3, uint32_t funct7, uint32_t opcode) {
         }
     }
 
-    if (opcode == 0x13) {
+    if (opcode == Opcodes::OP_IMM) {
         switch (funct3) { // I-type
             case 0x0:
                 return ALUOp::ADD; // ADDI
@@ -199,27 +207,27 @@ ALUOp CPU::MapToALU(uint32_t funct3, uint32_t funct7, uint32_t opcode) {
         }
     }
 
-    if (opcode == 0x03) { //load
+    if (opcode == Opcodes::LOAD) { //load
         return ALUOp::ADD;
     }
 
-    if (opcode == 0x63) { // branch
+    if (opcode == Opcodes::BRANCH) { // branch
         return ALUOp::SUB;
     }
 
-    if (opcode == 0x67) { // jalr
+    if (opcode == Opcodes::JALR) { // jalr
         return ALUOp::ADD;
     }
 
-    if (opcode == 0x23) { // store
+    if (opcode == Opcodes::STORE) { // store
         return ALUOp::ADD;
     }
 
-    if (opcode == 0x37 || opcode == 0x17) { // lui or auipc
+    if (opcode == Opcodes::LUI || opcode == Opcodes::AUIPC) { // lui or auipc
         return ALUOp::SLL;
     }
 
-    if (opcode == 0x6F) { // jal
+    if (opcode == Opcodes::JAL) { // jal
         return ALUOp::ADD;
     }
 
