@@ -26,6 +26,9 @@ void CPU::run() {
                 regFile.write(id_decoded.rd, alu_result.value);
                 pc += 4;
                 break;
+
+//--------------------------------------------------------------------------------------
+
             case InstrType::I:
                 aluop = MapToALU(id_decoded.funct3, id_decoded.funct7, id_decoded.opcode);
                 alu_result = alu.execute(aluop, regFile.read(id_decoded.rs1), id_decoded.imm);
@@ -46,6 +49,9 @@ void CPU::run() {
                 }
                 pc += 4;
                 break;
+
+//--------------------------------------------------------------------------------------
+
             case InstrType::S:
                 aluop = MapToALU(id_decoded.funct3, id_decoded.funct7, id_decoded.opcode);
                 alu_result = alu.execute(aluop, regFile.read(id_decoded.rs1), id_decoded.imm);
@@ -61,6 +67,9 @@ void CPU::run() {
                 }
                 pc += 4;
                 break;
+
+//--------------------------------------------------------------------------------------
+
             case InstrType::B:
                 aluop = MapToALU(id_decoded.funct3, id_decoded.funct7, id_decoded.opcode);
                 alu_result = alu.execute(aluop, regFile.read(id_decoded.rs1), regFile.read(id_decoded.rs2));
@@ -94,17 +103,32 @@ void CPU::run() {
                 }
                 pc += 4;
                 break;
+
+//--------------------------------------------------------------------------------------
+
             case InstrType::U:
                 aluop = MapToALU(id_decoded.funct3, id_decoded.funct7, id_decoded.opcode);
-                alu_result = alu.execute(aluop, 0, id_decoded.imm);
-                regFile.write(id_decoded.rd, alu_result.value);
-                pc += 4;
+                alu_result = alu.execute(aluop, id_decoded.imm, 12);
+                
+                if (id_decoded.opcode == 0x37) { // LUI
+                    regFile.write(id_decoded.rd, id_decoded.imm);
+                } else if (id_decoded.opcode == 0x17) { // AUIPC
+                    regFile.write(id_decoded.rd, pc + id_decoded.imm);
+                } else {
+                    throw std::runtime_error("Unsupported U-type instruction");
+                }
                 break;
+
+//--------------------------------------------------------------------------------------
+
             case InstrType::J:
                 alu_result = alu.execute(ALUOp::ADD, pc, id_decoded.imm);
                 regFile.write(id_decoded.rd, pc + 4);
                 pc = alu_result.value;
                 break;
+                
+//--------------------------------------------------------------------------------------
+
             case InstrType::SYSTEM:
                 if (id_decoded.funct3 == 0x0 && id_decoded.imm == 0x000) {
                     halted = true;
@@ -129,7 +153,7 @@ void CPU::printStats() {
 }
 
 ALUOp CPU::MapToALU(uint32_t funct3, uint32_t funct7, uint32_t opcode) {
-    if (opcode == 0x33){
+    if (opcode == 0x33){ // R-type
         switch (funct3){
             case 0x0:
                 return (funct7 == 0x00) ? ALUOp::ADD : ALUOp::SUB;
@@ -153,7 +177,7 @@ ALUOp CPU::MapToALU(uint32_t funct3, uint32_t funct7, uint32_t opcode) {
     }
 
     if (opcode == 0x13) {
-        switch (funct3) {
+        switch (funct3) { // I-type
             case 0x0:
                 return ALUOp::ADD; // ADDI
             case 0x2:
@@ -175,23 +199,27 @@ ALUOp CPU::MapToALU(uint32_t funct3, uint32_t funct7, uint32_t opcode) {
         }
     }
 
-    if (opcode == 0x03) {
+    if (opcode == 0x03) { //load
         return ALUOp::ADD;
     }
 
-    if (opcode == 0x63) {
+    if (opcode == 0x63) { // branch
         return ALUOp::SUB;
     }
 
-    if (opcode == 0x67) {
+    if (opcode == 0x67) { // jalr
         return ALUOp::ADD;
     }
 
-    if (opcode == 0x27) {
+    if (opcode == 0x23) { // store
         return ALUOp::ADD;
     }
 
-    if (opcode == 0x23) {
+    if (opcode == 0x37 || opcode == 0x17) { // lui or auipc
+        return ALUOp::SLL;
+    }
+
+    if (opcode == 0x6F) { // jal
         return ALUOp::ADD;
     }
 
