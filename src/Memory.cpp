@@ -1,4 +1,4 @@
-#include "Memory.h"
+#include "../include/Memory.h"
 
 #include <string>
 #include <fstream>
@@ -42,7 +42,7 @@ uint32_t Memory::instructionCount() const {
 }
 
 uint32_t Memory::loadWord(uint32_t address) const {
-    if address + 3 <= dataMem.size()) {
+    if (address + 3 < dataMem.size()) {
         return (dataMem[address+3] << 24) | (dataMem[address + 2] << 16) | (dataMem[address + 1] << 8) | dataMem[address];
     } else {
         std::cerr << "Error: Data address out of bounds." << std::endl;
@@ -51,7 +51,7 @@ uint32_t Memory::loadWord(uint32_t address) const {
 }
 
 void Memory::storeWord(uint32_t address, uint32_t value) {
-    if (address + 3 <= dataMem.size()) {
+    if (address + 3 < dataMem.size()) {
         dataMem[address + 3] = (value >> 24) & 0xFF;
         dataMem[address + 2] = (value >> 16) & 0xFF;
         dataMem[address + 1] = (value >> 8) & 0xFF;
