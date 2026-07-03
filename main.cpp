@@ -5,7 +5,7 @@
 
 #include "include/Memory.h"
 #include "ALU.h"
-#include "RegisterFile.h"
+#include "include/RegisterFile.h"
 #include "CPU.h"
 #include "Decoder.h"
 
@@ -55,6 +55,15 @@ int main(int argc, char* argv[]) {
         std::cout << "  imm: " << std::dec << decoded.imm << std::endl;
         std::cout << "----------------------------------------" << std::endl;
     }
+
+    RegisterFile regFile;
+
+    regFile.write(1, 42);
+    regFile.write(2, 100);
+    regFile.write(0,69);
+    std::cout << "Register x1: " << regFile.read(1) << std::endl;
+
+    regFile.dump();
 
     return 0;
 }

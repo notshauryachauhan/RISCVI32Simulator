@@ -19,7 +19,7 @@ class Memory{
         void storeByte(uint32_t address, uint8_t value);
 
         uint32_t instructionCount() const;
-
+    
     private:
 
         std::vector<uint32_t> instrMem;
