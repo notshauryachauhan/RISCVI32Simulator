@@ -4,23 +4,10 @@
 #include <cstdint>
 
 #include "include/Memory.h"
-#include "ALU.h"
+#include "include/ALU.h"
 #include "include/RegisterFile.h"
-#include "CPU.h"
-#include "Decoder.h"
-
-std::string instrTypeToString(InstrType type){
-    switch (type) {
-        case InstrType::R: return "R";
-        case InstrType::I: return "I";
-        case InstrType::S: return "S";
-        case InstrType::B: return "B";
-        case InstrType::U: return "U";
-        case InstrType::J: return "J";
-        case InstrType::SYSTEM: return "SYSTEM";
-        default: return "UNKNOWN";
-    }
-}
+#include "include/CPU.h"
+#include "include/Decoder.h"
 
 
 int main(int argc, char* argv[]) {
@@ -29,6 +16,13 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    CPU cpu;
+    cpu.loadProgram(argv[1]);
+    cpu.run();
+    cpu.printStats();
+
+
+    /* For testing purposes, you can use this main function to load a program and print the instructions and their decoded forms.
     Memory memory;
     memory.loadProgram(argv[1]);
 
@@ -65,5 +59,21 @@ int main(int argc, char* argv[]) {
 
     regFile.dump();
 
+    */
     return 0;
 }
+
+/* For testing purposes, you can use this function to convert InstrType to string for easier debugging.
+std::string instrTypeToString(InstrType type){
+    switch (type) {
+        case InstrType::R: return "R";
+        case InstrType::I: return "I";
+        case InstrType::S: return "S";
+        case InstrType::B: return "B";
+        case InstrType::U: return "U";
+        case InstrType::J: return "J";
+        case InstrType::SYSTEM: return "SYSTEM";
+        default: return "UNKNOWN";
+    }
+}
+*/
