@@ -23,7 +23,7 @@ void Memory::loadProgram(const std::string& filename) {
             continue;
         }
 
-        uint32_t instruction = std::stoul(line, nullptr, 2);
+        uint32_t instruction = static_cast<uint32_t>(std::stoul(line, nullptr, 2));
         instrMem.push_back(instruction);
     }
 }
@@ -38,7 +38,7 @@ uint32_t Memory::fetchInstruction(uint32_t address) const {
 }
 
 uint32_t Memory::instructionCount() const {
-    return instrMem.size();
+    return static_cast<uint32_t>(instrMem.size());
 }
 
 uint32_t Memory::loadWord(uint32_t address) const {

@@ -7,9 +7,6 @@
 #include <cstdint>
 #include <string>
 
-
-#include <iostream>
-
 CPU::CPU() : alu(), decoder(), regFile(), memory(), pc(0), cycleCount(0), halted(false) {}
 
 void CPU::loadProgram(const std::string& filename) {
@@ -17,6 +14,7 @@ void CPU::loadProgram(const std::string& filename) {
     pc = 0;
     cycleCount = 0;
     halted = false;
+    regFile.write(2, 65536); // initialize sp to top of memory
 }
 
 void CPU::run() {
@@ -24,8 +22,10 @@ void CPU::run() {
         uint32_t if_raw_instr = memory.fetchInstruction(pc);
         Instruction id_decoded = decoder.decode(if_raw_instr);
 
-        ALUOp aluop;
-        ALUResult alu_result;
+        ALUOp aluop = ALUOp::ADD;
+        ALUResult alu_result = {0, false};
+
+        cycleCount++;
 
         switch (id_decoded.type) {
             case InstrType::R:
@@ -48,11 +48,11 @@ void CPU::run() {
                     } else {
                         throw std::runtime_error("Unsupported load instruction");
                     }
-                } if(id_decoded.opcode == Opcodes::OP_IMM) {
+                } else if(id_decoded.opcode == Opcodes::OP_IMM) {
                     regFile.write(id_decoded.rd, alu_result.value);
-                } if (id_decoded.opcode == Opcodes::JALR) {
+                } else if (id_decoded.opcode == Opcodes::JALR) {
                     regFile.write(id_decoded.rd, pc + 4);
-                    pc = alu_result.value;
+                    pc = alu_result.value & ~1u;
                     continue;
                 }
                 pc += 4;
@@ -65,7 +65,7 @@ void CPU::run() {
                 alu_result = alu.execute(aluop, regFile.read(id_decoded.rs1), id_decoded.imm);
                 switch (id_decoded.funct3) {
                     case 0x0: // SB
-                        memory.storeByte(alu_result.value, regFile.read(id_decoded.rs2) & 0xFF);
+                        memory.storeByte(alu_result.value, static_cast<uint8_t>(regFile.read(id_decoded.rs2) & 0xFF));
                         break;
                     case 0x2: // SW
                         memory.storeWord(alu_result.value, regFile.read(id_decoded.rs2));
@@ -114,10 +114,7 @@ void CPU::run() {
 
 //--------------------------------------------------------------------------------------
 
-            case InstrType::U:
-                aluop = MapToALU(id_decoded.funct3, id_decoded.funct7, id_decoded.opcode);
-                alu_result = alu.execute(aluop, id_decoded.imm, 12);
-                
+            case InstrType::U:               
                 if (id_decoded.opcode == Opcodes::LUI) { // LUI
                     regFile.write(id_decoded.rd, id_decoded.imm);
                 } else if (id_decoded.opcode == Opcodes::AUIPC) { // AUIPC
@@ -125,6 +122,7 @@ void CPU::run() {
                 } else {
                     throw std::runtime_error("Unsupported U-type instruction");
                 }
+                pc += 4;
                 break;
 
 //--------------------------------------------------------------------------------------
@@ -147,24 +145,20 @@ void CPU::run() {
             default:
                 throw std::runtime_error("Unknown instruction type");
         }
-
-        if (!halted) {
-            cycleCount++;
-        }
     }
 }
 
 void CPU::printStats() {
     regFile.dump();
-    std::cout << "Final PC: " << std::hex << pc << std::endl;
-    std::cout << "Total cycles executed: " << cycleCount << std::endl;
+    std::cout << "Final PC: 0x" << std::hex << pc << std::endl;
+    std::cout << "Total cycles executed: " << std::dec << cycleCount << std::endl;
 }
 
 ALUOp CPU::MapToALU(uint32_t funct3, uint32_t funct7, uint32_t opcode) {
     if (opcode == Opcodes::OP){ // R-type
         switch (funct3){
             case 0x0:
-                return (funct7 == 0x00) ? ALUOp::ADD : ALUOp::SUB;
+                return (funct7 == 0x20) ? ALUOp::SUB : ALUOp::ADD;
             case 0x1:
                 return ALUOp::SLL;
             case 0x2:
